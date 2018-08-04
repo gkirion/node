@@ -2,16 +2,14 @@ package com.george.node.util;
 
 import java.net.URI;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.client.RestTemplate;
 
@@ -30,23 +28,19 @@ public class Launcher {
 		SpringApplication.run(Launcher.class, args);
 	}
 
-	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
-		return restTemplateBuilder.build();
-	}
-
-	@Bean
-	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
-		return args -> {
-			log.info(node.getIp());
-			log.info(node.getPort() + "");
-			String response = restTemplate.postForObject("http://localhost:8080/thiroros", node, String.class);
+	@PostConstruct
+	public void join() {
+		log.info(node.getIp());
+		log.info(node.getPort() + "");
+		RestTemplate restTemplate = new RestTemplate();
+		String response = restTemplate.postForObject("http://localhost:8080/thiroros", node, String.class);
+		if (!response.equals("Node already exists")) {
+			node.setId(Long.parseLong(response));
 			log.info("node joined the network with node id: " + response);
-			if (!response.equals("Node already exists")) {
-				node.setId(Long.parseLong(response));
-			}
-			log.info(node.toString());
-		};
+		} else {
+			log.info(response);
+		}
+		log.info(node.toString());
 	}
 
 	@PreDestroy
